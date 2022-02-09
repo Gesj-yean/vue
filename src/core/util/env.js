@@ -55,7 +55,7 @@ export const isServerRendering = () => {
 export const devtools = inBrowser && window.__VUE_DEVTOOLS_GLOBAL_HOOK__
 
 /* istanbul ignore next */
-export function isNative (Ctor: any): boolean {
+export function isNative (Ctor: any): boolean { // 确定一个函数是浏览器原生的还是在脚本中创建
   return typeof Ctor === 'function' && /native code/.test(Ctor.toString())
 }
 

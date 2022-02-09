@@ -12,10 +12,11 @@ export function initProvide (vm: Component) {
       : provide
   }
 }
-
+// 初始化注入
 export function initInjections (vm: Component) {
   const result = resolveInject(vm.$options.inject, vm)
   if (result) {
+    // 禁用组件内部的观察更新计算
     toggleObserving(false)
     Object.keys(result).forEach(key => {
       /* istanbul ignore else */
@@ -29,9 +30,11 @@ export function initInjections (vm: Component) {
           )
         })
       } else {
+        // 响应式属性
         defineReactive(vm, key, result[key])
       }
     })
+    // 打开组件内部的观察更新计算
     toggleObserving(true)
   }
 }
@@ -39,6 +42,7 @@ export function initInjections (vm: Component) {
 export function resolveInject (inject: any, vm: Component): ?Object {
   if (inject) {
     // inject is :any because flow is not smart enough to figure out cached
+    // 注入是 :any 因为流不够聪明，无法找出缓存
     const result = Object.create(null)
     const keys = hasSymbol
       ? Reflect.ownKeys(inject)
@@ -46,7 +50,7 @@ export function resolveInject (inject: any, vm: Component): ?Object {
 
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i]
-      // #6574 in case the inject object is observed...
+      // #6574 in case the inject object is observed... 如果观察到注入对象...
       if (key === '__ob__') continue
       const provideKey = inject[key].from
       let source = vm

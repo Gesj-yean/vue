@@ -19,7 +19,8 @@ export function initMixin (Vue: Class<Component>) {
     vm._uid = uid++
 
     let startTag, endTag
-    /* istanbul ignore if */
+    /* istanbul ignore if */ 
+    // 代码覆盖率工具 Istanbul 忽略性能测试
     if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
       startTag = `vue-perf-start:${vm._uid}`
       endTag = `vue-perf-end:${vm._uid}`
@@ -33,6 +34,7 @@ export function initMixin (Vue: Class<Component>) {
       // optimize internal component instantiation
       // since dynamic options merging is pretty slow, and none of the
       // internal component options needs special treatment.
+      // 优化内部组件实例化，因为动态 options 合并非常慢，而且没有一个内部组件选项需要特殊处理。
       initInternalComponent(vm, options)
     } else {
       vm.$options = mergeOptions(
@@ -49,14 +51,14 @@ export function initMixin (Vue: Class<Component>) {
     }
     // expose real self
     vm._self = vm
-    initLifecycle(vm)
-    initEvents(vm)
-    initRender(vm)
-    callHook(vm, 'beforeCreate')
+    initLifecycle(vm) // 初始化 $parent、$root、$children、$refs
+    initEvents(vm) // 添加 $on $off $once 等 listener
+    initRender(vm) // createElement，响应式 $attrs 和 $listeners
+    callHook(vm, 'beforeCreate') // 创建 beforeCreate 生命周期钩子
     initInjections(vm) // resolve injections before data/props
-    initState(vm)
+    initState(vm) // 初始化 props、methods、data、computed、watch
     initProvide(vm) // resolve provide after data/props
-    callHook(vm, 'created')
+    callHook(vm, 'created') //// 创建 created 生命周期钩子
 
     /* istanbul ignore if */
     if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
@@ -71,9 +73,11 @@ export function initMixin (Vue: Class<Component>) {
   }
 }
 
+// 初始化内部组件，接收 组件实例、内部组件选项
 export function initInternalComponent (vm: Component, options: InternalComponentOptions) {
   const opts = vm.$options = Object.create(vm.constructor.options)
   // doing this because it's faster than dynamic enumeration.
+  // 这样做是因为它比动态枚举更快。
   const parentVnode = options._parentVnode
   opts.parent = options.parent
   opts._parentVnode = parentVnode
@@ -90,6 +94,7 @@ export function initInternalComponent (vm: Component, options: InternalComponent
   }
 }
 
+// 处理构造函数选项
 export function resolveConstructorOptions (Ctor: Class<Component>) {
   let options = Ctor.options
   if (Ctor.super) {
@@ -114,6 +119,7 @@ export function resolveConstructorOptions (Ctor: Class<Component>) {
   return options
 }
 
+// 处理被修改的选项
 function resolveModifiedOptions (Ctor: Class<Component>): ?Object {
   let modified
   const latest = Ctor.options

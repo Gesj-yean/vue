@@ -25,16 +25,23 @@ export function initRender (vm: Component) {
   vm.$slots = resolveSlots(options._renderChildren, renderContext)
   vm.$scopedSlots = emptyObject
   // bind the createElement fn to this instance
+  // 在这个实例上绑定 createElement 方法
   // so that we get proper render context inside it.
+  // 以便我们在其中获得适当的渲染上下文。
   // args order: tag, data, children, normalizationType, alwaysNormalize
+  // 参数顺序
   // internal version is used by render functions compiled from templates
+  // 内部版本被使用到了从模版编译的渲染函数中
   vm._c = (a, b, c, d) => createElement(vm, a, b, c, d, false)
   // normalization is always applied for the public version, used in
   // user-written render functions.
+  // 规范化总是应用于发布版本，用于用户编写的渲染函数。
   vm.$createElement = (a, b, c, d) => createElement(vm, a, b, c, d, true)
 
   // $attrs & $listeners are exposed for easier HOC creation.
   // they need to be reactive so that HOCs using them are always updated
+  // 公开了 $attrs 和 $listeners 以便于创建 HOC。
+  // 它们需要具有响应性，以便始终更新使用它们的 HOC
   const parentData = parentVnode && parentVnode.data
 
   /* istanbul ignore else */

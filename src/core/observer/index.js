@@ -21,6 +21,7 @@ const arrayKeys = Object.getOwnPropertyNames(arrayMethods)
 /**
  * In some cases we may want to disable observation inside a component's
  * update computation.
+ * 在某些情况下，我们可能希望禁用组件内部的观察更新计算。
  */
 export let shouldObserve: boolean = true
 
@@ -130,7 +131,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
 }
 
 /**
- * Define a reactive property on an Object.
+ * Define a reactive property on an Object. 在一个对象上定义一个响应式属性。
  */
 export function defineReactive (
   obj: Object,
@@ -234,15 +235,19 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
  * Delete a property and trigger change if necessary.
  */
 export function del (target: Array<any> | Object, key: any) {
+  // 删除未定义的目标或者是基本数据类型，抛出错误：不能删除 undefind\null\原始值的属性
+  // isUndef() 判断是否是 undefined 或 null，isPrimitive() 判断是否是 string number symbol boolean
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {
     warn(`Cannot delete reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
+  // 删除目标是数组并且是合法的 index，那么用 splice 操作删除
   if (Array.isArray(target) && isValidArrayIndex(key)) {
     target.splice(key, 1)
     return
   }
+  // 删除目标是 Vue 实例或是根组件，抛出错误：避免删除 Vue 实例或根组件的 $data
   const ob = (target: any).__ob__
   if (target._isVue || (ob && ob.vmCount)) {
     process.env.NODE_ENV !== 'production' && warn(
@@ -251,9 +256,11 @@ export function del (target: Array<any> | Object, key: any) {
     )
     return
   }
+  // 删除的属性不属于目标，不会报错，直接返回
   if (!hasOwn(target, key)) {
     return
   }
+  // 删除属性，如果目标数组/对象未被观察过就直接返回，否则触发响应式更新
   delete target[key]
   if (!ob) {
     return

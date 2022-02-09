@@ -99,7 +99,7 @@ export function toNumber (val: string): number | string {
   return isNaN(n) ? val : n
 }
 
-/**
+/**创建一个映射，返回一个检查 key 是否在映射中的方法
  * Make a map and return a function for checking if a key
  * is in that map.
  */
@@ -148,10 +148,10 @@ export function hasOwn (obj: Object | Array<*>, key: string): boolean {
 }
 
 /**
- * Create a cached version of a pure function.
+ * Create a cached version of a pure function.创建纯函数方法的缓存
  */
 export function cached<F: Function> (fn: F): F {
-  const cache = Object.create(null)
+  const cache = Object.create(null) // 创建一个原型为null的空对象
   return (function cachedFn (str: string) {
     const hit = cache[str]
     return hit || (cache[str] = fn(str))

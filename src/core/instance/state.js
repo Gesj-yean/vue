@@ -67,6 +67,7 @@ function initProps (vm: Component, propsOptions: Object) {
   const props = vm._props = {}
   // cache prop keys so that future props updates can iterate using Array
   // instead of dynamic object key enumeration.
+  // 缓存 prop 键，以便将来的 props 更新可以使用 Array 进行迭代，而不是对象键枚举
   const keys = vm.$options._propKeys = []
   const isRoot = !vm.$parent
   // root instance props should be converted
@@ -323,10 +324,12 @@ export function stateMixin (Vue: Class<Component>) {
   // flow somehow has problems with directly declared definition object
   // when using Object.defineProperty, so we have to procedurally build up
   // the object here.
+  // 在使用 Object.defineProperty 时，flow 在某种程度上存在直接声明定义对象的问题，因此我们必须在此处按程序构建对象。
   const dataDef = {}
   dataDef.get = function () { return this._data }
   const propsDef = {}
   propsDef.get = function () { return this._props }
+  // 非生产环境下，对 $data 和 $props 进行修改赋值操作会报错 
   if (process.env.NODE_ENV !== 'production') {
     dataDef.set = function () {
       warn(
@@ -341,22 +344,24 @@ export function stateMixin (Vue: Class<Component>) {
   }
   Object.defineProperty(Vue.prototype, '$data', dataDef)
   Object.defineProperty(Vue.prototype, '$props', propsDef)
-
+  // Vue.prototype直接在原型上定义，使其在每个vue实例上可用
   Vue.prototype.$set = set
   Vue.prototype.$delete = del
 
   Vue.prototype.$watch = function (
-    expOrFn: string | Function,
-    cb: any,
-    options?: Object
+    expOrFn: string | Function, // key
+    cb: any, // 回调方法
+    options?: Object // immediate / deep
   ): Function {
     const vm: Component = this
-    if (isPlainObject(cb)) {
+    // isPlainObject(cb) 做严格对象的类型检查
+    if (isPlainObject(cb)) { 
       return createWatcher(vm, expOrFn, cb, options)
     }
     options = options || {}
     options.user = true
     const watcher = new Watcher(vm, expOrFn, cb, options)
+    // 开启 immediate 
     if (options.immediate) {
       const info = `callback for immediate watcher "${watcher.expression}"`
       pushTarget()
