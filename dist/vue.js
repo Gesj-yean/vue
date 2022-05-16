@@ -46,7 +46,7 @@
 
   /**
    * Quick object check - this is primarily used to tell
-   * Objects from primitive values when we know the value
+   * objects from primitive values when we know the value
    * is a JSON-compliant type.
    */
   function isObject (obj) {
@@ -225,6 +225,7 @@
 
   /**
    * Convert an Array-like object to a real Array.
+   * 将类数组的对象转化为真数组
    */
   function toArray (list, start) {
     start = start || 0;
@@ -554,15 +555,18 @@
         }
       })); // https://github.com/facebook/flow/issues/285
       window.addEventListener('test-passive', null, opts);
-    } catch (e) {}
+    } catch (e) { }
   }
 
+  // 需要懒加载，因为 vue 在这之前是必须的
+  // 服务器渲染可以设置 VUE_ENV
   // this needs to be lazy-evaled because vue may be required before
   // vue-server-renderer can set VUE_ENV
   var _isServer;
   var isServerRendering = function () {
     if (_isServer === undefined) {
       /* istanbul ignore if */
+      // 不是浏览器不是服务器
       if (!inBrowser && !inWeex && typeof global !== 'undefined') {
         // detect presence of vue-server-renderer and avoid
         // Webpack shimming the process
@@ -594,7 +598,7 @@
   } else {
     // a non-standard Set polyfill that only works with primitive keys.
     _Set = /*@__PURE__*/(function () {
-      function Set () {
+      function Set() {
         this.set = Object.create(null);
       }
       Set.prototype.has = function has (key) {
@@ -1164,7 +1168,7 @@
   /*  */
 
   /**
-   * Option overwriting strategies are functcachedions that handle
+   * Option overwriting strategies are functions that handle
    * how to merge a parent option value and a child option
    * value into the final value.
    */
@@ -1945,6 +1949,12 @@
   // where microtasks have too high a priority and fire in between supposedly
   // sequential events (e.g. #4521, #6690, which have workarounds)
   // or even between bubbling of the same event (#6566).
+  //这里我们有使用微任务的异步延迟包装器。
+  //在2.5中，我们使用(宏)任务(结合微任务)。
+  //但是，它有微妙的问题，当状态改变之前，重绘(例如#6813，出-入转换)。
+  //还有，在事件处理中使用(宏)任务会导致一些奇怪的行为(#7109， #7153， #7546， #7834， #8109)。
+  //所以我们现在到处使用微任务，再次。
+  //这种权衡的一个主要缺点是存在一些情况，微任务的优先级太高，在两者之间触发顺序事件(例如#4521，#6690，它们有工作区)甚至在同一个事件(#6566)的冒泡之间。
   var timerFunc;
 
   // The nextTick behavior leverages the microtask queue, which can be accessed
@@ -1953,27 +1963,32 @@
   // UIWebView in iOS >= 9.3.3 when triggered in touch event handlers. It
   // completely stops working after triggering a few times... so, if native
   // Promise is available, we will use it:
+  // nextTick行为利用微任务队列，它可以被访问
+  //通过原生Promise。然后或MutationObserver。
+  // MutationObserver有更广泛的支持，但是它被严重地嵌入
+  // UIWebView在iOS中的>= 9.3.3当触发触摸事件处理程序。它
+  //触发几次后完全停止工作…所以,如果本地
+  // Promise是可用的，我们将使用它:
   /* istanbul ignore next, $flow-disable-line */
+  // 优先使用 Promise
   if (typeof Promise !== 'undefined' && isNative(Promise)) {
     var p = Promise.resolve();
     timerFunc = function () {
       p.then(flushCallbacks);
-      // In problematic UIWebViews, Promise.then doesn't completely break, but
-      // it can get stuck in a weird state where callbacks are pushed into the
-      // microtask queue but the queue isn't being flushed, until the browser
-      // needs to do some other work, e.g. handle a timer. Therefore we can
-      // "force" the microtask queue to be flushed by adding an empty timer.
+      // 在有问题的 UIWebViews 中，Promise.then 不会完全 break，但是它可能会陷入一种奇怪的状态，当回调被推入微任务队列，
+      // 但队列没有被刷新，直到浏览器需要做一些其他的工作，例如处理一个计时器。因此,我们可以通过添加一个空定时器"强制"微任务队列刷新。
       if (isIOS) { setTimeout(noop); }
     };
     isUsingMicroTask = true;
-  } else if (!isIE && typeof MutationObserver !== 'undefined' && (
+  }
+  // 不是 IE 并且原生 MutationObserver 存在
+  else if (!isIE && typeof MutationObserver !== 'undefined' && (
     isNative(MutationObserver) ||
     // PhantomJS and iOS 7.x
     MutationObserver.toString() === '[object MutationObserverConstructor]'
   )) {
-    // Use MutationObserver where native Promise is not available,
-    // e.g. PhantomJS, iOS7, Android 4.4
-    // (#6466 MutationObserver is unreliable in IE11)
+    // 在 native Promise 不可用时使用 MutationObserver 代替，
+    // e.g. PhantomJS, iOS7, Android 4.4 (#6466 MutationObserver is unreliable in IE11)
     var counter = 1;
     var observer = new MutationObserver(flushCallbacks);
     var textNode = document.createTextNode(String(counter));
@@ -1985,15 +2000,15 @@
       textNode.data = String(counter);
     };
     isUsingMicroTask = true;
-  } else if (typeof setImmediate !== 'undefined' && isNative(setImmediate)) {
-    // Fallback to setImmediate.
-    // Technically it leverages the (macro) task queue,
-    // but it is still a better choice than setTimeout.
+  }
+  // 原生 setImmediate 存在，就用 setImmediate。技术上，它利用了(宏)任务队列，但它仍然是一个比 setTimeout 更好的选择。
+  else if (typeof setImmediate !== 'undefined' && isNative(setImmediate)) {
     timerFunc = function () {
       setImmediate(flushCallbacks);
     };
-  } else {
-    // Fallback to setTimeout.
+  }
+  // 最后使用 setTimeout 
+  else {
     timerFunc = function () {
       setTimeout(flushCallbacks, 0);
     };
@@ -2012,10 +2027,13 @@
         _resolve(ctx);
       }
     });
+    // 如果不是 pending 状态，执行
     if (!pending) {
       pending = true;
       timerFunc();
     }
+    // 这是当 nextTick 不传 cb 参数的时候，提供一个 Promise 化的调用，比如：nextTick().then(() => {})
+    // 当 _resolve 函数执行，就会跳到 then 的逻辑中。
     // $flow-disable-line
     if (!cb && typeof Promise !== 'undefined') {
       return new Promise(function (resolve) {
@@ -3830,8 +3848,12 @@
 
   function eventsMixin (Vue) {
     var hookRE = /^hook:/;
+    // 监听当前实例上的自定义事件。事件可以由 vm.$emit 触发。回调函数会接收所有传入事件触发函数的额外参数。
+    // vm.$on 接受两个参数，event 以及它的回调函数 fn
     Vue.prototype.$on = function (event, fn) {
       var vm = this;
+      // 当 event 是数组时，遍历每一项执行 else 中的逻辑
+      // 当 event 是 Key 时，则放入 _events[event] 中，等待 $emit 的触发
       if (Array.isArray(event)) {
         for (var i = 0, l = event.length; i < l; i++) {
           vm.$on(event[i], fn);
@@ -3840,48 +3862,57 @@
         (vm._events[event] || (vm._events[event] = [])).push(fn);
         // optimize hook:event cost by using a boolean flag marked at registration
         // instead of a hash lookup
+        // 优化钩子:在注册时使用 _hasHookEvent 布尔标记而不是哈希查找来优化事件开销,
+        // _hasHookEvent = true 是生命周期回调钩子 callHook 函数触发 $emit('hook:' + hook) 的必要条件
         if (hookRE.test(event)) {
           vm._hasHookEvent = true;
         }
       }
       return vm
     };
-
+    // 监听一个自定义事件，但是只触发一次。一旦触发之后，监听器就会被移除。
+    // vm.$once 接受两个参数，event 以及它的回调函数 fn
     Vue.prototype.$once = function (event, fn) {
       var vm = this;
       function on () {
-        vm.$off(event, on);
-        fn.apply(vm, arguments);
+        vm.$off(event, on); // 移除监听
+        fn.apply(vm, arguments); // 将参数传给回调函数
       }
       on.fn = fn;
-      vm.$on(event, on);
+      vm.$on(event, on); // 在 $on 的回调函数执行中移除监听，达到执行一次的效果
       return vm
     };
 
+    // 移除自定义事件监听器。
+    // 如果没有提供参数，则移除所有的事件监听器；
+    // 如果只提供了事件，则移除该事件所有的监听器；
+    // 如果同时提供了事件与回调，则只移除这个回调的监听器。
     Vue.prototype.$off = function (event, fn) {
       var vm = this;
-      // all
+      // 如果没有提供参数，则移除所有的事件监听器；
       if (!arguments.length) {
         vm._events = Object.create(null);
         return vm
       }
-      // array of events
+      // events 是数组时，遍历每一项并执行后面的逻辑
       if (Array.isArray(event)) {
         for (var i$1 = 0, l = event.length; i$1 < l; i$1++) {
           vm.$off(event[i$1], fn);
         }
         return vm
       }
-      // specific event
+
       var cbs = vm._events[event];
+      // 该事件的回调列表为空，$off 不做任何处理
       if (!cbs) {
         return vm
       }
+      // 如果没有传回调函数，只提供了事件，则移除该事件所有的监听器（回调函数）；
       if (!fn) {
         vm._events[event] = null;
         return vm
       }
-      // specific handler
+      // 如果传了回调函数，就在该事件的回调函数列表中用 splice 方法移除这个回调的监听器。
       var cb;
       var i = cbs.length;
       while (i--) {
@@ -3893,11 +3924,13 @@
       }
       return vm
     };
-
+    // 触发当前实例上的事件。附加参数都会传给监听器回调。
     Vue.prototype.$emit = function (event) {
       var vm = this;
       {
         var lowerCaseEvent = event.toLowerCase();
+        // 传入的 event 含有大写字母并且 vm._events 已经注册了小写 event 时，提示：
+        // HTML 不区分大小写，你不能在 template 中使用 v-on 监听驼峰形式的事件 Key，你应该使用中划线替代驼峰
         if (lowerCaseEvent !== event && vm._events[lowerCaseEvent]) {
           tip(
             "Event \"" + lowerCaseEvent + "\" is emitted in component " +
@@ -3911,10 +3944,11 @@
       var cbs = vm._events[event];
       if (cbs) {
         cbs = cbs.length > 1 ? toArray(cbs) : cbs;
-        var args = toArray(arguments, 1);
+        // 将类数组的对象转化为真数组，执行当前实例上事件的所有回调函数
+        var args = toArray(arguments, 1); 
         var info = "event handler for \"" + event + "\"";
         for (var i = 0, l = cbs.length; i < l; i++) {
-          invokeWithErrorHandling(cbs[i], vm, args, vm, info);
+          invokeWithErrorHandling(cbs[i], vm, args, vm, info); 
         }
       }
       return vm
@@ -3926,9 +3960,13 @@
   var activeInstance = null;
   var isUpdatingChildComponent = false;
 
+  // 接受一个实例，将当前激活实例设置为传来的实例，同时返回一个将激活实例恢复成前实例的方法
   function setActiveInstance(vm) {
+    // 保存前一个激活实例
     var prevActiveInstance = activeInstance;
+    // 保存当前激活实例等于参数实例
     activeInstance = vm;
+    // 返回一个让当前实例恢复成前实例的方法
     return function () {
       activeInstance = prevActiveInstance;
     }
@@ -3966,19 +4004,22 @@
       var vm = this;
       var prevEl = vm.$el;
       var prevVnode = vm._vnode;
+      // setActiveInstance 接受一个实例，将当前激活实例设置为传来的实例，同时返回一个将激活实例恢复成前实例的方法
       var restoreActiveInstance = setActiveInstance(vm);
       vm._vnode = vnode;
       // Vue.prototype.__patch__ is injected in entry points
       // based on the rendering backend used.
       if (!prevVnode) {
-        // initial render
+        // 首次渲染时执行的逻辑
         vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */);
       } else {
-        // updates
+        // 更新时执行的逻辑
         vm.$el = vm.__patch__(prevVnode, vnode);
       }
       restoreActiveInstance();
-      // update __vue__ reference
+      // 更新 __vue__ 引用。
+      // 清除前 $el 的 __vue__ 引用，$el 的 __vue__ 置为当前实例。
+      // 在 destroyed 阶段后也会将 $el 的 __vue__ 置为 null。
       if (prevEl) {
         prevEl.__vue__ = null;
       }
@@ -3989,6 +4030,7 @@
       if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
         vm.$parent.$el = vm.$el;
       }
+      // updated 钩子调度器被调用确保子组件在父组件的 updated 钩子里被更新
       // updated hook is called by the scheduler to ensure that children are
       // updated in a parent's updated hook.
     };
@@ -5518,6 +5560,7 @@
     value: FunctionalRenderContext
   });
 
+  //直接在控制台输入 Vue.version，即可得到当前使用的 vue 版本~
   Vue.version = '2.6.14';
 
   /*  */
@@ -9220,7 +9263,7 @@
       }
     }
     if (staticClass) {
-      el.staticClass = JSON.stringify(staticClass);
+      el.staticClass = JSON.stringify(staticClass.replace(/\s+/g, ' ').trim());
     }
     var classBinding = getBindingAttr(el, 'class', false /* getStatic */);
     if (classBinding) {

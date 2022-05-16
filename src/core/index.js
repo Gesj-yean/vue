@@ -21,6 +21,7 @@ Object.defineProperty(Vue, 'FunctionalRenderContext', {
   value: FunctionalRenderContext
 })
 
+//直接在控制台输入 Vue.version，即可得到当前使用的 vue 版本~
 Vue.version = '__VERSION__'
 
 export default Vue

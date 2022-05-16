@@ -31,15 +31,18 @@ if (inBrowser) {
       }
     }: Object)) // https://github.com/facebook/flow/issues/285
     window.addEventListener('test-passive', null, opts)
-  } catch (e) {}
+  } catch (e) { }
 }
 
+// 需要懒加载，因为 vue 在这之前是必须的
+// 服务器渲染可以设置 VUE_ENV
 // this needs to be lazy-evaled because vue may be required before
 // vue-server-renderer can set VUE_ENV
 let _isServer
 export const isServerRendering = () => {
   if (_isServer === undefined) {
     /* istanbul ignore if */
+    // 不是浏览器不是服务器
     if (!inBrowser && !inWeex && typeof global !== 'undefined') {
       // detect presence of vue-server-renderer and avoid
       // Webpack shimming the process
@@ -72,7 +75,7 @@ if (typeof Set !== 'undefined' && isNative(Set)) {
   // a non-standard Set polyfill that only works with primitive keys.
   _Set = class Set implements SimpleSet {
     set: Object;
-    constructor () {
+    constructor() {
       this.set = Object.create(null)
     }
     has (key: string | number) {
@@ -88,9 +91,9 @@ if (typeof Set !== 'undefined' && isNative(Set)) {
 }
 
 export interface SimpleSet {
-  has(key: string | number): boolean;
-  add(key: string | number): mixed;
-  clear(): void;
+  has (key: string | number): boolean;
+  add (key: string | number): mixed;
+  clear (): void;
 }
 
 export { _Set }

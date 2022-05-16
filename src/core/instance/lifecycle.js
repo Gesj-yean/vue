@@ -21,9 +21,13 @@ import {
 export let activeInstance: any = null
 export let isUpdatingChildComponent: boolean = false
 
+// 接受一个实例，将当前激活实例设置为传来的实例，同时返回一个将激活实例恢复成前实例的方法
 export function setActiveInstance(vm: Component) {
+  // 保存前一个激活实例
   const prevActiveInstance = activeInstance
+  // 保存当前激活实例等于参数实例
   activeInstance = vm
+  // 返回一个让当前实例恢复成前实例的方法
   return () => {
     activeInstance = prevActiveInstance
   }
@@ -61,19 +65,22 @@ export function lifecycleMixin (Vue: Class<Component>) {
     const vm: Component = this
     const prevEl = vm.$el
     const prevVnode = vm._vnode
+    // setActiveInstance 接受一个实例，将当前激活实例设置为传来的实例，同时返回一个将激活实例恢复成前实例的方法
     const restoreActiveInstance = setActiveInstance(vm)
     vm._vnode = vnode
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
     if (!prevVnode) {
-      // initial render
+      // 首次渲染时执行的逻辑
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     } else {
-      // updates
+      // 更新时执行的逻辑
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
     restoreActiveInstance()
-    // update __vue__ reference
+    // 更新 __vue__ 引用。
+    // 清除前 $el 的 __vue__ 引用，$el 的 __vue__ 置为当前实例。
+    // 在 destroyed 阶段后也会将 $el 的 __vue__ 置为 null。
     if (prevEl) {
       prevEl.__vue__ = null
     }
@@ -84,6 +91,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
     if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
       vm.$parent.$el = vm.$el
     }
+    // updated 钩子调度器被调用确保子组件在父组件的 updated 钩子里被更新
     // updated hook is called by the scheduler to ensure that children are
     // updated in a parent's updated hook.
   }
