@@ -77,29 +77,33 @@ export function renderMixin (Vue: Class<Component>) {
     const vm: Component = this
     const { render, _parentVnode } = vm.$options
 
+    // vm.$scopedSlots 用来访问作用域插槽。
     if (_parentVnode) {
       vm.$scopedSlots = normalizeScopedSlots(
-        _parentVnode.data.scopedSlots,
-        vm.$slots,
-        vm.$scopedSlots
+        _parentVnode.data.scopedSlots, // slots
+        vm.$slots, // normalSlots
+        vm.$scopedSlots // prevSlots
       )
     }
 
     // set parent vnode. this allows render functions to have access
     // to the data on the placeholder node.
+    // 设置父节点 vnode。这允许渲染函数访问占位节点上的数据
     vm.$vnode = _parentVnode
     // render self
+    // 渲染自身
     let vnode
     try {
       // There's no need to maintain a stack because all render fns are called
       // separately from one another. Nested component's render fns are called
       // when parent component is patched.
+      // 不需要去维持栈，因为所有 fns 都会被依次调用。当父组件分发时，调用嵌套组件的渲染函数
       currentRenderingInstance = vm
       vnode = render.call(vm._renderProxy, vm.$createElement)
     } catch (e) {
       handleError(e, vm, `render`)
-      // return error render result,
-      // or previous vnode to prevent render error causing blank component
+      // renderError 函数只在开发环境下工作。当 render 函数遭遇错误时，提供另外一种渲染输出。
+      // 其错误将会作为第二个参数传递到 renderError。这个功能配合 hot-reload 非常实用。
       /* istanbul ignore else */
       if (process.env.NODE_ENV !== 'production' && vm.$options.renderError) {
         try {
@@ -119,6 +123,7 @@ export function renderMixin (Vue: Class<Component>) {
       vnode = vnode[0]
     }
     // return empty vnode in case the render function errored out
+    // render 函数报错的情况下，返回空 vnode
     if (!(vnode instanceof VNode)) {
       if (process.env.NODE_ENV !== 'production' && Array.isArray(vnode)) {
         warn(

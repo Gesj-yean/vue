@@ -162,6 +162,7 @@ export default class Watcher {
    * Subscriber interface.
    * Will be called when a dependency changes.
    */
+  // 订阅者接口，当依赖改变时将会被调用
   update () {
     /* istanbul ignore else */
     if (this.lazy) {
@@ -177,6 +178,7 @@ export default class Watcher {
    * Scheduler job interface.
    * Will be called by the scheduler.
    */
+  // 调度器工作接口，将会被调度器调用
   run () {
     if (this.active) {
       const value = this.get()
@@ -229,8 +231,9 @@ export default class Watcher {
       // remove self from vm's watcher list
       // this is a somewhat expensive operation so we skip it
       // if the vm is being destroyed.
+      // 如果组件不是正在被销毁
       if (!this.vm._isBeingDestroyed) {
-        remove(this.vm._watchers, this)
+        remove(this.vm._watchers, this) // 从数组中删除一个项目。
       }
       let i = this.deps.length
       while (i--) {

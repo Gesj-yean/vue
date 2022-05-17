@@ -5,6 +5,7 @@ import { isObject, isDef, hasSymbol } from 'core/util/index'
 /**
  * Runtime helper for rendering v-for lists.
  */
+// 渲染 v-for 列表，返回一个 VNode 组成的数组
 export function renderList (
   val: any,
   render: (
@@ -14,17 +15,22 @@ export function renderList (
   ) => VNode
 ): ?Array<VNode> {
   let ret: ?Array<VNode>, i, l, keys, key
+  // 如果 val 是数组或字符串
   if (Array.isArray(val) || typeof val === 'string') {
     ret = new Array(val.length)
     for (i = 0, l = val.length; i < l; i++) {
       ret[i] = render(val[i], i)
     }
-  } else if (typeof val === 'number') {
+  }
+  // 如果 val 是数字
+  else if (typeof val === 'number') {
     ret = new Array(val)
     for (i = 0; i < val; i++) {
       ret[i] = render(i + 1, i)
     }
-  } else if (isObject(val)) {
+  } 
+  // 如果 val 是对象，遍历它的迭代器
+  else if (isObject(val)) {
     if (hasSymbol && val[Symbol.iterator]) {
       ret = []
       const iterator: Iterator<any> = val[Symbol.iterator]()
@@ -33,7 +39,8 @@ export function renderList (
         ret.push(render(result.value, ret.length))
         result = iterator.next()
       }
-    } else {
+    } 
+    else {
       keys = Object.keys(val)
       ret = new Array(keys.length)
       for (i = 0, l = keys.length; i < l; i++) {

@@ -88,26 +88,32 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // updated in a parent's updated hook.
   }
 
+  // 迫使 Vue 实例重新渲染。注意它仅仅影响实例本身和插入插槽内容的子组件，而不是所有子组件。
   Vue.prototype.$forceUpdate = function () {
     const vm: Component = this
     if (vm._watcher) {
-      vm._watcher.update()
+      vm._watcher.update() // 调用 core/instance/observer/watcher.js 中的 update() 方法
     }
   }
 
+  // 完全销毁一个实例。清理它与其它实例的连接，解绑它的全部指令及事件监听器。
+  // 触发 beforeDestroy 和 destroyed 的钩子。
   Vue.prototype.$destroy = function () {
     const vm: Component = this
+    // 如果正在被销毁，就不再继续执行销毁操作，直接返回
     if (vm._isBeingDestroyed) {
       return
     }
+    // 调用 beforeDestroy 生命周期钩子后打开正在被销毁标志
     callHook(vm, 'beforeDestroy')
     vm._isBeingDestroyed = true
-    // remove self from parent
+    // 父实例存在、且没有正在被销毁、也不是抽象组件就移除自身组件实例
     const parent = vm.$parent
     if (parent && !parent._isBeingDestroyed && !vm.$options.abstract) {
       remove(parent.$children, vm)
     }
-    // teardown watchers
+
+    // 从所有订阅者列表中删除自身，意味着不会再被观察
     if (vm._watcher) {
       vm._watcher.teardown()
     }
@@ -120,19 +126,19 @@ export function lifecycleMixin (Vue: Class<Component>) {
     if (vm._data.__ob__) {
       vm._data.__ob__.vmCount--
     }
-    // call the last hook...
+
+    // __patch__ 方法传入旧节点和新节点 null 用于销毁节点，之后调用 destroy 钩子
     vm._isDestroyed = true
-    // invoke destroy hooks on current rendered tree
     vm.__patch__(vm._vnode, null)
-    // fire destroyed hook
     callHook(vm, 'destroyed')
-    // turn off all instance listeners.
+
+    // vm.$off 移除自定义事件监听器。如果没有提供参数，则移除实例上所有的事件监听器
     vm.$off()
-    // remove __vue__ reference
+    // 移除 __vue__ 引用
     if (vm.$el) {
       vm.$el.__vue__ = null
     }
-    // release circular reference (#6759)
+    // 释放循环引用
     if (vm.$vnode) {
       vm.$vnode.parent = null
     }

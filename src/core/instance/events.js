@@ -51,7 +51,8 @@ export function updateComponentListeners (
 
 export function eventsMixin (Vue: Class<Component>) {
   const hookRE = /^hook:/
-  Vue.prototype.$on = function (event: string | Array<string>, fn: Function): Component {
+    // 监听当前实例上的自定义事件。事件可以由 vm.$emit 触发。回调函数会接收所有传入事件触发函数的额外参数。
+    Vue.prototype.$on = function (event: string | Array<string>, fn: Function): Component {
     const vm: Component = this
     if (Array.isArray(event)) {
       for (let i = 0, l = event.length; i < l; i++) {

@@ -30,6 +30,7 @@ export function bindDynamicKeys (baseObj: Object, values: Array<any>): Object {
 // helper to dynamically append modifier runtime markers to event names.
 // ensure only append when value is already string, otherwise it will be cast
 // to string and cause the type check to miss.
+// 动态添加修饰器运行标记到事件名称上
 export function prependModifier (value: any, symbol: string): any {
   return typeof value === 'string' ? symbol + value : value
 }
