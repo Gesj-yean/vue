@@ -24,6 +24,9 @@ let uid = 0
  * and fires callback when the expression value changes.
  * This is used for both the $watch() api and directives.
  */
+/**
+ * Watcher 解析一个表达式，收集依赖，当表达式发生改变时触发调度。Watcher 类用于 $watch() api 和指令。
+ */
 export default class Watcher {
   vm: Component;
   expression: string;
@@ -43,7 +46,7 @@ export default class Watcher {
   getter: Function;
   value: any;
 
-  constructor (
+  constructor(
     vm: Component,
     expOrFn: string | Function,
     cb: Function,

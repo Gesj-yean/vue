@@ -16,7 +16,11 @@ export function isReserved (str: string): boolean {
 }
 
 /**
- * Define a property.
+ * 用 Object.defineProperty 为目标对象定义属性
+ * @param {*} obj 对象
+ * @param {*} key 键名
+ * @param {*} val 键值
+ * @param {*} enumerable 是否可枚举，默认可枚举
  */
 export function def (obj: Object, key: string, val: any, enumerable?: boolean) {
   Object.defineProperty(obj, key, {

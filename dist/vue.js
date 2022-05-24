@@ -493,7 +493,11 @@
   }
 
   /**
-   * Define a property.
+   * 用 Object.defineProperty 为目标对象定义属性
+   * @param {*} obj 对象
+   * @param {*} key 键名
+   * @param {*} val 键值
+   * @param {*} enumerable 是否可枚举，默认可枚举
    */
   function def (obj, key, val, enumerable) {
     Object.defineProperty(obj, key, {
@@ -714,37 +718,39 @@
   var uid = 0;
 
   /**
-   * A dep is an observable that can have multiple
-   * directives subscribing to it.
+   * dep 下的 subs 存放 Watcher 列表，可以调用 dep.notify() 触发 Watcher 列表更新。
    */
-  var Dep = function Dep () {
+  var Dep = function Dep() {
     this.id = uid++;
     this.subs = [];
   };
 
+  // 向订阅者列表中添加一个订阅者 Watcher
   Dep.prototype.addSub = function addSub (sub) {
     this.subs.push(sub);
   };
 
+  // 从订阅者列表中删掉一个 Watcher
   Dep.prototype.removeSub = function removeSub (sub) {
     remove(this.subs, sub);
   };
 
+  // todo 
   Dep.prototype.depend = function depend () {
     if (Dep.target) {
       Dep.target.addDep(this);
     }
   };
 
+  // 通知订阅者列表触发更新
   Dep.prototype.notify = function notify () {
-    // stabilize the subscriber list first
+    // 用 slice() 方法拷贝一个 subs，不影响 this.subs
     var subs = this.subs.slice();
     if ( !config.async) {
-      // subs aren't sorted in scheduler if not running async
-      // we need to sort them now to make sure they fire in correct
-      // order
+      // 如果不是运行异步，Watcher 列表不会在调度器中排序，我们需要去对他们进行排序以确保他们按顺序正确的调度
       subs.sort(function (a, b) { return a.id - b.id; });
     }
+    // 依次触发 Watcher.update()
     for (var i = 0, l = subs.length; i < l; i++) {
       subs[i].update();
     }
@@ -906,6 +912,7 @@
   /*  */
 
   var arrayKeys = Object.getOwnPropertyNames(arrayMethods);
+  console.log(arrayKeys);
 
   /**
    * In some cases we may want to disable observation inside a component's
@@ -919,33 +926,33 @@
   }
 
   /**
-   * Observer class that is attached to each observed
-   * object. Once attached, the observer converts the target
-   * object's property keys into getter/setters that
-   * collect dependencies and dispatch updates.
+   * Observer 类和每个响应式对象关联。
+   * observer 会转化对象的属性值的 getter/setters 方法收集依赖和派发更新。
    */
-  var Observer = function Observer (value) {
+  var Observer = function Observer(value) {
     this.value = value;
-    this.dep = new Dep();
+    this.dep = new Dep(); // 存放 Observer 的 watcher 列表
     this.vmCount = 0;
-    def(value, '__ob__', this);
+    def(value, '__ob__', this); // __ob__ 指向自身 observe 实例，存在 __ob__ 属性意味着已经被观察过
+    // 如果是数组
     if (Array.isArray(value)) {
+      // hasProto = '__proto__' in {} 判断对象是否存在 __proto__ 属性
       if (hasProto) {
+        // 如果有 __proto__，就将 value.__proto__ 指向 arrayMethods
         protoAugment(value, arrayMethods);
+        console.log(arrayMethods);
       } else {
+        // 否则，就遍历 arrayMethods，将值复制到 value 上
         copyAugment(value, arrayMethods, arrayKeys);
+        console.log(arrayMethods);
       }
-      this.observeArray(value);
+      this.observeArray(value); // 数组项遍历，给数组的每一项创建一个 observe 实例
     } else {
-      this.walk(value);
+      this.walk(value); // 遍历所有的属性，修改 getter/setters
     }
   };
 
-  /**
-   * Walk through all properties and convert them into
-   * getter/setters. This method should only be called when
-   * value type is Object.
-   */
+  // 遍历所有的属性，修改 getter/setters，这个方法只有在 value 是object时调用
   Observer.prototype.walk = function walk (obj) {
     var keys = Object.keys(obj);
     for (var i = 0; i < keys.length; i++) {
@@ -953,9 +960,7 @@
     }
   };
 
-  /**
-   * Observe a list of Array items.
-   */
+  // 数组项遍历，给数组的每一项创建一个 observe 实例
   Observer.prototype.observeArray = function observeArray (items) {
     for (var i = 0, l = items.length; i < l; i++) {
       observe(items[i]);
@@ -965,8 +970,10 @@
   // helpers
 
   /**
-   * Augment a target Object or Array by intercepting
-   * the prototype chain using __proto__
+   * 将 target.__proto__ 指向 src
+   * 拦截原型链__proto__，来增强目标对象或数组
+   * @param {*} target 
+   * @param {Object} src 
    */
   function protoAugment (target, src) {
     /* eslint-disable no-proto */
@@ -975,14 +982,17 @@
   }
 
   /**
-   * Augment a target Object or Array by defining
-   * hidden properties.
+   * 遍历 key 属性值列表，将 src 中的 key 属性值逐一定义到 target 的属性中
+   * 通过定义隐藏属性，来增强目标对象或数组
+   * @param {Object} target 
+   * @param {Object} src 
+   * @param {Array<string>} keys 
    */
   /* istanbul ignore next */
   function copyAugment (target, src, keys) {
     for (var i = 0, l = keys.length; i < l; i++) {
       var key = keys[i];
-      def(target, key, src[key]);
+      def(target, key, src[key]); // // 为 target 定义 key 和值
     }
   }
 
@@ -1078,26 +1088,35 @@
   }
 
   /**
-   * Set a property on an object. Adds the new property and
-   * triggers change notification if the property doesn't
-   * already exist.
+   * 为对象或是数组设置属性，添加新的属性并触发响应式
+   * @param {Object | Array} target 
+   * @param {string | number} propertyName/index 
+   * @param {any} val 
+   * @returns val
    */
   function set (target, key, val) {
+    // 开发环境下，如果 target 未定义或者 target 是原始值，则不支持定义属性，会抛出警告
     if (
       (isUndef(target) || isPrimitive(target))
     ) {
       warn(("Cannot set reactive property on undefined, null, or primitive value: " + ((target))));
     }
+    // 如果是数组并且 key 是合法下标，如果 key 大于目标数组长度，那么数组长度扩展为 key，否则数组长度不变
+    // 之后，splice 插入 val
     if (Array.isArray(target) && isValidArrayIndex(key)) {
       target.length = Math.max(target.length, key);
       target.splice(key, 1, val);
       return val
     }
+    // 如果 target 是数组，并且不是原型链上的 key，那么设置 target 的 key 属性值
     if (key in target && !(key in Object.prototype)) {
       target[key] = val;
       return val
     }
     var ob = (target).__ob__;
+
+    // 如果对象就是 Vue，或者是根组件(根组件 的 ob.vmCount 不为 0)，那么抛出错误
+    // 不能在 Vue 实例或者给根 $data 上添加属性，需要在 data 选项中声明
     if (target._isVue || (ob && ob.vmCount)) {
        warn(
         'Avoid adding reactive properties to a Vue instance or its root $data ' +
@@ -1105,10 +1124,13 @@
       );
       return val
     }
+    // 如果 target 上没有 observe 对象，那么就直接设置值
     if (!ob) {
       target[key] = val;
       return val
     }
+    // 如果 target 上有 observe 对象，说明是响应式，那么 defineReactive 在一个对象上定义一个响应式属性。
+    // 通知他的订阅者，触发响应式
     defineReactive(ob.value, key, val);
     ob.dep.notify();
     return val
@@ -4489,7 +4511,10 @@
    * and fires callback when the expression value changes.
    * This is used for both the $watch() api and directives.
    */
-  var Watcher = function Watcher (
+  /**
+   * Watcher 解析一个表达式，收集依赖，当表达式发生改变时触发调度。Watcher 类用于 $watch() api 和指令。
+   */
+  var Watcher = function Watcher(
     vm,
     expOrFn,
     cb,
@@ -5492,7 +5517,6 @@
   /*  */
 
   function initGlobalAPI (Vue) {
-    // config
     var configDef = {};
     configDef.get = function () { return config; };
     {
@@ -5502,11 +5526,10 @@
         );
       };
     }
+    // 添加 Vue 配置到 Vue.config 中
     Object.defineProperty(Vue, 'config', configDef);
 
-    // exposed util methods.
-    // NOTE: these are not considered part of the public API - avoid relying on
-    // them unless you are aware of the risk.
+    // 暴露一些工具方法，Note: 这些不是公共API，不要依赖他们，使用它们是有风险的。
     Vue.util = {
       warn: warn,
       extend: extend,
@@ -5514,40 +5537,52 @@
       defineReactive: defineReactive
     };
 
+    // 向响应式对象中添加一个 property，并确保这个新 property 同样是响应式的，且触发视图更新。
     Vue.set = set;
+    // 删除对象的property。
     Vue.delete = del;
+    // 在下次 DOM 更新循环结束之后执行延迟回调。
     Vue.nextTick = nextTick;
 
     // 2.6 explicit observable API
-    Vue.observable = function (obj) {
-      observe(obj);
-      return obj
-    };
+    // 让一个对象可响应。Vue 内部会用它来处理 data 函数返回的对象。
+    // Vue.observable = <T>(obj: T): T => {
+    //   observe(obj)
+    //   return obj
+    // }
 
+    // 创建 Vue.options
     Vue.options = Object.create(null);
+    // 因为 ASSET_TYPES = ['component','directive','filter']
+    // 所以创建 Vue.options.components Vue.options.directives Vue.options.filters
     ASSET_TYPES.forEach(function (type) {
       Vue.options[type + 's'] = Object.create(null);
     });
 
-    // this is used to identify the "base" constructor to extend all plain-object
-    // components with in Weex's multi-instance scenarios.
+    // 将 Vue 挂载到 Vue.options._base 上
     Vue.options._base = Vue;
 
+    // 给 Vue.options.components 添加 KeepAlive
     extend(Vue.options.components, builtInComponents);
 
+    // 初始化 Vue.use
     initUse(Vue);
+    // 初始化 Vue.mixin
     initMixin$1(Vue);
+    // 初始化 Vue.extend
     initExtend(Vue);
     initAssetRegisters(Vue);
   }
 
-  console.log('initGlobalAPI');
   initGlobalAPI(Vue);
 
+  // Object.defineProperty get 当访问该属性时，会调用此函数。
+  // get 该函数的返回值会被用作属性的值。
   Object.defineProperty(Vue.prototype, '$isServer', {
-    get: isServerRendering
+    get: isServerRendering // isServerRendering 方法返回是否为服务器环境
   });
 
+  // 为Vue原型定义ssrContext属性
   Object.defineProperty(Vue.prototype, '$ssrContext', {
     get: function get () {
       /* istanbul ignore next */
@@ -5555,12 +5590,12 @@
     }
   });
 
-  // expose FunctionalRenderContext for ssr runtime helper installation
+  // 暴露 FunctionalRenderContext 给 ssr runtime helper 安装使用
   Object.defineProperty(Vue, 'FunctionalRenderContext', {
     value: FunctionalRenderContext
   });
 
-  //直接在控制台输入 Vue.version，即可得到当前使用的 vue 版本~
+  // 控制台直接输出 Vue.version 可以看到当前 Vue 版本
   Vue.version = '2.6.14';
 
   /*  */
