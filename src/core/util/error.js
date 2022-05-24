@@ -33,6 +33,7 @@ export function handleError (err: Error, vm: any, info: string) {
   }
 }
 
+// 调用方法错误处理
 export function invokeWithErrorHandling (
   handler: Function,
   context: any,
@@ -47,6 +48,7 @@ export function invokeWithErrorHandling (
       res.catch(e => handleError(e, vm, info + ` (Promise/async)`))
       // issue #9511
       // avoid catch triggering multiple times when nested calls
+      // 避免在嵌套回调时触发多次捕获
       res._handled = true
     }
   } catch (e) {

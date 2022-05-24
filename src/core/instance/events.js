@@ -148,10 +148,10 @@ export function eventsMixin (Vue: Class<Component>) {
     if (cbs) {
       cbs = cbs.length > 1 ? toArray(cbs) : cbs
       // 将类数组的对象转化为真数组，执行当前实例上事件的所有回调函数
-      const args = toArray(arguments, 1) 
+      const args = toArray(arguments, 1)
       const info = `event handler for "${event}"`
       for (let i = 0, l = cbs.length; i < l; i++) {
-        invokeWithErrorHandling(cbs[i], vm, args, vm, info) 
+        invokeWithErrorHandling(cbs[i], vm, args, vm, info)
       }
     }
     return vm

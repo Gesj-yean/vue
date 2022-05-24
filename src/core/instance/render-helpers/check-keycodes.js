@@ -16,6 +16,7 @@ function isKeyNotMatch<T> (expect: T | Array<T>, actual: T): boolean {
  * exposed as Vue.prototype._k
  * passing in eventKeyName as last argument separately for backwards compat
  */
+// 传入 eventKeyName 作为最后的参数，向后兼容
 export function checkKeyCodes (
   eventKeyCode: number,
   key: string,

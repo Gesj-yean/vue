@@ -1689,6 +1689,7 @@ function mergeOptions (
  * This function is used because child instances need access
  * to assets defined in its ancestor chain.
  */
+// 处理路径，获取对应资源
 function resolveAsset (
   options,
   type,

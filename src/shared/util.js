@@ -35,7 +35,7 @@ export function isPrimitive (value: any): boolean %checks {
 
 /**
  * Quick object check - this is primarily used to tell
- * objects from primitive values when we know the value
+ * Objects from primitive values when we know the value
  * is a JSON-compliant type.
  */
 export function isObject (obj: mixed): boolean %checks {
@@ -94,6 +94,7 @@ export function toString (val: any): string {
  * Convert an input value to a number for persistence.
  * If the conversion fails, return original string.
  */
+// 转成数字，失败的话返回原值
 export function toNumber (val: string): number | string {
   const n = parseFloat(val)
   return isNaN(n) ? val : n
@@ -176,6 +177,7 @@ export const capitalize = cached((str: string): string => {
 /**
  * Hyphenate a camelCase string.
  */
+// 驼峰转中划线
 const hyphenateRE = /\B([A-Z])/g
 export const hyphenate = cached((str: string): string => {
   return str.replace(hyphenateRE, '-$1').toLowerCase()
@@ -291,13 +293,18 @@ export function looseEqual (a: any, b: any): boolean {
     try {
       const isArrayA = Array.isArray(a)
       const isArrayB = Array.isArray(b)
+      // 数组
       if (isArrayA && isArrayB) {
         return a.length === b.length && a.every((e, i) => {
           return looseEqual(e, b[i])
         })
-      } else if (a instanceof Date && b instanceof Date) {
+      } 
+      // 如果是日期实例
+      else if (a instanceof Date && b instanceof Date) {
         return a.getTime() === b.getTime()
-      } else if (!isArrayA && !isArrayB) {
+      } 
+      // 都不是数组
+      else if (!isArrayA && !isArrayB) {
         const keysA = Object.keys(a)
         const keysB = Object.keys(b)
         return keysA.length === keysB.length && keysA.every(key => {

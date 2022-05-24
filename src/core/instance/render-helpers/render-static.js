@@ -11,10 +11,12 @@ export function renderStatic (
   let tree = cached[index]
   // if has already-rendered static tree and not inside v-for,
   // we can reuse the same tree.
+  // 如果已经缓存过的静态渲染树并且不是 v-for，就直接那缓存中的渲染树
   if (tree && !isInFor) {
     return tree
   }
   // otherwise, render a fresh tree.
+  // 否则渲染一个新的树
   tree = cached[index] = this.$options.staticRenderFns[index].call(
     this._renderProxy,
     null,
@@ -28,6 +30,7 @@ export function renderStatic (
  * Runtime helper for v-once.
  * Effectively it means marking the node as static with a unique key.
  */
+// 使用唯一 key 将节点标记为静态。
 export function markOnce (
   tree: VNode | Array<VNode>,
   index: number,

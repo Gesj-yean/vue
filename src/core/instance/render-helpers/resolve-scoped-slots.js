@@ -1,5 +1,5 @@
 /* @flow */
-
+// 处理 scoped slots
 export function resolveScopedSlots (
   fns: ScopedSlotsData, // see flow/vnode
   res?: Object,

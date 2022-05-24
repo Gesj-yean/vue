@@ -46,7 +46,7 @@
 
   /**
    * Quick object check - this is primarily used to tell
-   * objects from primitive values when we know the value
+   * Objects from primitive values when we know the value
    * is a JSON-compliant type.
    */
   function isObject (obj) {
@@ -105,6 +105,7 @@
    * Convert an input value to a number for persistence.
    * If the conversion fails, return original string.
    */
+  // 转成数字，失败的话返回原值
   function toNumber (val) {
     var n = parseFloat(val);
     return isNaN(n) ? val : n
@@ -187,6 +188,7 @@
   /**
    * Hyphenate a camelCase string.
    */
+  // 驼峰转中划线
   var hyphenateRE = /\B([A-Z])/g;
   var hyphenate = cached(function (str) {
     return str.replace(hyphenateRE, '-$1').toLowerCase()
@@ -302,13 +304,18 @@
       try {
         var isArrayA = Array.isArray(a);
         var isArrayB = Array.isArray(b);
+        // 数组
         if (isArrayA && isArrayB) {
           return a.length === b.length && a.every(function (e, i) {
             return looseEqual(e, b[i])
           })
-        } else if (a instanceof Date && b instanceof Date) {
+        } 
+        // 如果是日期实例
+        else if (a instanceof Date && b instanceof Date) {
           return a.getTime() === b.getTime()
-        } else if (!isArrayA && !isArrayB) {
+        } 
+        // 都不是数组
+        else if (!isArrayA && !isArrayB) {
           var keysA = Object.keys(a);
           var keysB = Object.keys(b);
           return keysA.length === keysB.length && keysA.every(function (key) {
@@ -759,6 +766,7 @@
   // The current target watcher being evaluated.
   // This is globally unique because only one watcher
   // can be evaluated at a time.
+  // 当前目标 watcher 被评估。这是全球唯一的，因为一次只能评估一个 watcher。
   Dep.target = null;
   var targetStack = [];
 
@@ -1895,6 +1903,7 @@
     }
   }
 
+  // 调用方法错误处理
   function invokeWithErrorHandling (
     handler,
     context,
@@ -1909,6 +1918,7 @@
         res.catch(function (e) { return handleError(e, vm, info + " (Promise/async)"); });
         // issue #9511
         // avoid catch triggering multiple times when nested calls
+        // 避免在嵌套回调时触发多次捕获
         res._handled = true;
       }
     } catch (e) {
@@ -1971,12 +1981,17 @@
   // where microtasks have too high a priority and fire in between supposedly
   // sequential events (e.g. #4521, #6690, which have workarounds)
   // or even between bubbling of the same event (#6566).
-  //这里我们有使用微任务的异步延迟包装器。
-  //在2.5中，我们使用(宏)任务(结合微任务)。
-  //但是，它有微妙的问题，当状态改变之前，重绘(例如#6813，出-入转换)。
-  //还有，在事件处理中使用(宏)任务会导致一些奇怪的行为(#7109， #7153， #7546， #7834， #8109)。
-  //所以我们现在到处使用微任务，再次。
-  //这种权衡的一个主要缺点是存在一些情况，微任务的优先级太高，在两者之间触发顺序事件(例如#4521，#6690，它们有工作区)甚至在同一个事件(#6566)的冒泡之间。
+  // 这里我们有使用微任务的异步延迟包装器。
+  // 在 2.5 中，我们使用（宏）任务（结合微任务）。
+  // 但是，当状态在重绘之前改变时，它有一些微妙的问题
+  //（例如#6813，出入过渡）。
+  // 此外，在事件处理程序中使用（宏）任务会导致一些奇怪的行为
+  // 这是无法规避的（例如#7109、#7153、#7546、#7834、#8109）。
+  // 所以我们现在再次在任何地方使用微任务。
+  // 这种权衡的一个主要缺点是存在一些场景
+  // 微任务的优先级太高，应该在两者之间触发
+  // 顺序事件（例如 #4521、#6690，它们有变通方法）
+  // 甚至在同一事件的冒泡之间 (#6566)。
   var timerFunc;
 
   // The nextTick behavior leverages the microtask queue, which can be accessed
@@ -1985,20 +2000,28 @@
   // UIWebView in iOS >= 9.3.3 when triggered in touch event handlers. It
   // completely stops working after triggering a few times... so, if native
   // Promise is available, we will use it:
-  // nextTick行为利用微任务队列，它可以被访问
-  //通过原生Promise。然后或MutationObserver。
-  // MutationObserver有更广泛的支持，但是它被严重地嵌入
-  // UIWebView在iOS中的>= 9.3.3当触发触摸事件处理程序。它
-  //触发几次后完全停止工作…所以,如果本地
-  // Promise是可用的，我们将使用它:
+  // nextTick 行为利用了可以访问的微任务队列
+  // 通过本机 Promise.then 或 MutationObserver。
+  // MutationObserver 有更广泛的支持，但是它存在严重错误
+  // 在触摸事件处理程序中触发时，iOS 中的 UIWebView >= 9.3.3。 它
+  // 触发几次后完全停止工作...所以，如果是原生的
+  // Promise 可用，我们将使用它：
   /* istanbul ignore next, $flow-disable-line */
   // 优先使用 Promise
   if (typeof Promise !== 'undefined' && isNative(Promise)) {
     var p = Promise.resolve();
     timerFunc = function () {
       p.then(flushCallbacks);
-      // 在有问题的 UIWebViews 中，Promise.then 不会完全 break，但是它可能会陷入一种奇怪的状态，当回调被推入微任务队列，
-      // 但队列没有被刷新，直到浏览器需要做一些其他的工作，例如处理一个计时器。因此,我们可以通过添加一个空定时器"强制"微任务队列刷新。
+      // In problematic UIWebViews, Promise.then doesn't completely break, but
+      // it can get stuck in a weird state where callbacks are pushed into the
+      // microtask queue but the queue isn't being flushed, until the browser
+      // needs to do some other work, e.g. handle a timer. Therefore we can
+      // "force" the microtask queue to be flushed by adding an empty timer.
+      // 在有问题的 UIWebViews 中，Promise.then 并没有完全中断，但是
+      // 它可能会陷入一个奇怪的状态，回调被推入
+      // 微任务队列，但队列没有被刷新，直到浏览器
+      // 需要做一些其他的工作，例如 处理一个计时器。 因此我们可以
+      // 通过添加一个空计时器“强制”刷新微任务队列。
       if (isIOS) { setTimeout(noop); }
     };
     isUsingMicroTask = true;
@@ -2009,8 +2032,13 @@
     // PhantomJS and iOS 7.x
     MutationObserver.toString() === '[object MutationObserverConstructor]'
   )) {
-    // 在 native Promise 不可用时使用 MutationObserver 代替，
-    // e.g. PhantomJS, iOS7, Android 4.4 (#6466 MutationObserver is unreliable in IE11)
+    // Use MutationObserver where native Promise is not available,
+    // e.g. PhantomJS, iOS7, Android 4.4
+    // (#6466 MutationObserver is unreliable in IE11)
+    // 在原生 Promise 不可用的情况下使用 MutationObserver，
+    // 例如 PhantomJS、iOS7、Android 4.4
+    // (#6466 MutationObserver 在 IE11 中不可靠)
+    // 如果检测到浏览器支持MO，则创建一个文本节点，监听这个文本节点的改动事件，以此来触发nextTickHandler（也就是DOM更新完毕回调）的执行
     var counter = 1;
     var observer = new MutationObserver(flushCallbacks);
     var textNode = document.createTextNode(String(counter));
@@ -2022,15 +2050,19 @@
       textNode.data = String(counter);
     };
     isUsingMicroTask = true;
-  }
-  // 原生 setImmediate 存在，就用 setImmediate。技术上，它利用了(宏)任务队列，但它仍然是一个比 setTimeout 更好的选择。
-  else if (typeof setImmediate !== 'undefined' && isNative(setImmediate)) {
+  } else if (typeof setImmediate !== 'undefined' && isNative(setImmediate)) {
+    // Fallback to setImmediate.
+    // Technically it leverages the (macro) task queue,
+    // but it is still a better choice than setTimeout.
+    // 回退到 setImmediate。
+    // 从技术上讲，它利用了（宏）任务队列，
+    // 但它仍然是比 setTimeout 更好的选择。
     timerFunc = function () {
       setImmediate(flushCallbacks);
     };
-  }
-  // 最后使用 setTimeout 
-  else {
+  } else {
+    // Fallback to setTimeout.
+    // 回退到 setTimeout
     timerFunc = function () {
       setTimeout(flushCallbacks, 0);
     };
@@ -2694,22 +2726,28 @@
   /**
    * Runtime helper for rendering v-for lists.
    */
+  // 渲染 v-for 列表，返回一个 VNode 组成的数组
   function renderList (
     val,
     render
   ) {
     var ret, i, l, keys, key;
+    // 如果 val 是数组或字符串
     if (Array.isArray(val) || typeof val === 'string') {
       ret = new Array(val.length);
       for (i = 0, l = val.length; i < l; i++) {
         ret[i] = render(val[i], i);
       }
-    } else if (typeof val === 'number') {
+    }
+    // 如果 val 是数字
+    else if (typeof val === 'number') {
       ret = new Array(val);
       for (i = 0; i < val; i++) {
         ret[i] = render(i + 1, i);
       }
-    } else if (isObject(val)) {
+    } 
+    // 如果 val 是对象，遍历它的迭代器
+    else if (isObject(val)) {
       if (hasSymbol && val[Symbol.iterator]) {
         ret = [];
         var iterator = val[Symbol.iterator]();
@@ -2718,7 +2756,8 @@
           ret.push(render(result.value, ret.length));
           result = iterator.next();
         }
-      } else {
+      } 
+      else {
         keys = Object.keys(val);
         ret = new Array(keys.length);
         for (i = 0, l = keys.length; i < l; i++) {
@@ -2739,6 +2778,7 @@
   /**
    * Runtime helper for rendering <slot>
    */
+
   function renderSlot (
     name,
     fallbackRender,
@@ -2778,6 +2818,7 @@
   /**
    * Runtime helper for resolving filters
    */
+  // 处理过滤器，返回 this.$options['filters'][id]
   function resolveFilter (id) {
     return resolveAsset(this.$options, 'filters', id, true) || identity
   }
@@ -2797,6 +2838,7 @@
    * exposed as Vue.prototype._k
    * passing in eventKeyName as last argument separately for backwards compat
    */
+  // 传入 eventKeyName 作为最后的参数，向后兼容
   function checkKeyCodes (
     eventKeyCode,
     key,
@@ -2820,6 +2862,7 @@
   /**
    * Runtime helper for merging v-bind="object" into a VNode's data.
    */
+  // 合并 v-bind="object" 到 VNode 的 data 中
   function bindObjectProps (
     data,
     tag,
@@ -2828,29 +2871,36 @@
     isSync
   ) {
     if (value) {
+      // 如果 value 不是对象，就抛出错误：没有参数时，v-bind 可以绑定一个对象或数组值
       if (!isObject(value)) {
          warn(
           'v-bind without argument expects an Object or Array value',
           this
         );
-      } else {
+      } 
+      // 对象或数组时
+      else {
         if (Array.isArray(value)) {
           value = toObject(value);
         }
         var hash;
         var loop = function ( key ) {
+          // 单独处理 class 和 style 传入
           if (
             key === 'class' ||
             key === 'style' ||
             isReservedAttribute(key)
           ) {
             hash = data;
-          } else {
+          } 
+          // 
+          else {
             var type = data.attrs && data.attrs.type;
             hash = asProp || config.mustUseProp(tag, type, key)
               ? data.domProps || (data.domProps = {})
               : data.attrs || (data.attrs = {});
           }
+          // 驼峰式 key 中划线 key
           var camelizedKey = camelize(key);
           var hyphenatedKey = hyphenate(key);
           if (!(camelizedKey in hash) && !(hyphenatedKey in hash)) {
@@ -2884,10 +2934,12 @@
     var tree = cached[index];
     // if has already-rendered static tree and not inside v-for,
     // we can reuse the same tree.
+    // 如果已经缓存过的静态渲染树并且不是 v-for，就直接那缓存中的渲染树
     if (tree && !isInFor) {
       return tree
     }
     // otherwise, render a fresh tree.
+    // 否则渲染一个新的树
     tree = cached[index] = this.$options.staticRenderFns[index].call(
       this._renderProxy,
       null,
@@ -2901,6 +2953,7 @@
    * Runtime helper for v-once.
    * Effectively it means marking the node as static with a unique key.
    */
+  // 使用唯一 key 将节点标记为静态。
   function markOnce (
     tree,
     index,
@@ -2934,6 +2987,7 @@
 
   /*  */
 
+  // 
   function bindObjectListeners (data, value) {
     if (value) {
       if (!isPlainObject(value)) {
@@ -2954,7 +3008,7 @@
   }
 
   /*  */
-
+  // 处理 scoped slots
   function resolveScopedSlots (
     fns, // see flow/vnode
     res,
@@ -3002,6 +3056,7 @@
   // helper to dynamically append modifier runtime markers to event names.
   // ensure only append when value is already string, otherwise it will be cast
   // to string and cause the type check to miss.
+  // 动态添加修饰器运行标记到事件名称上
   function prependModifier (value, symbol) {
     return typeof value === 'string' ? symbol + value : value
   }
@@ -3009,23 +3064,23 @@
   /*  */
 
   function installRenderHelpers (target) {
-    target._o = markOnce;
-    target._n = toNumber;
-    target._s = toString;
-    target._l = renderList;
-    target._t = renderSlot;
-    target._q = looseEqual;
-    target._i = looseIndexOf;
-    target._m = renderStatic;
-    target._f = resolveFilter;
-    target._k = checkKeyCodes;
-    target._b = bindObjectProps;
-    target._v = createTextVNode;
-    target._e = createEmptyVNode;
-    target._u = resolveScopedSlots;
+    target._o = markOnce; // 使用唯一 key 将节点标记为静态
+    target._n = toNumber; // 字符串转成数字，失败的话返回原值
+    target._s = toString; // 将任何类型的值转成字符串
+    target._l = renderList; // 渲染 v-for 列表，返回一个 VNode 组成的数组
+    target._t = renderSlot; // 渲染 <slot>，返回一个 VNode 组成的数组
+    target._q = looseEqual; // 判断任意类型是否松散相等
+    target._i = looseIndexOf; // 获取数组中与参数相等的值的下标
+    target._m = renderStatic; // 优先获取缓存渲染树，其次返回一个新的渲染树
+    target._f = resolveFilter; // 处理过滤器，返回 this.$options['filters'][id]
+    target._k = checkKeyCodes; // 校验 eventKeyCode 方法
+    target._b = bindObjectProps; // 合并 v-bind="object" 到 VNode 的 data 中
+    target._v = createTextVNode; // 创建字符串节点
+    target._e = createEmptyVNode; // 创建空节点，可以传入 text
+    target._u = resolveScopedSlots; // 处理 scoped slots
     target._g = bindObjectListeners;
-    target._d = bindDynamicKeys;
-    target._p = prependModifier;
+    target._d = bindDynamicKeys; // 绑定动态 key，<div :[key]="value">
+    target._p = prependModifier; //动态添加修饰器运行标记到事件名称上
   }
 
   /*  */
@@ -3605,29 +3660,33 @@
       var render = ref.render;
       var _parentVnode = ref._parentVnode;
 
+      // vm.$scopedSlots 用来访问作用域插槽。
       if (_parentVnode) {
         vm.$scopedSlots = normalizeScopedSlots(
-          _parentVnode.data.scopedSlots,
-          vm.$slots,
-          vm.$scopedSlots
+          _parentVnode.data.scopedSlots, // slots
+          vm.$slots, // normalSlots
+          vm.$scopedSlots // prevSlots
         );
       }
 
       // set parent vnode. this allows render functions to have access
       // to the data on the placeholder node.
+      // 设置父节点 vnode。这允许渲染函数访问占位节点上的数据
       vm.$vnode = _parentVnode;
       // render self
+      // 渲染自身
       var vnode;
       try {
         // There's no need to maintain a stack because all render fns are called
         // separately from one another. Nested component's render fns are called
         // when parent component is patched.
+        // 不需要去维持栈，因为所有 fns 都会被依次调用。当父组件分发时，调用嵌套组件的渲染函数
         currentRenderingInstance = vm;
         vnode = render.call(vm._renderProxy, vm.$createElement);
       } catch (e) {
         handleError(e, vm, "render");
-        // return error render result,
-        // or previous vnode to prevent render error causing blank component
+        // renderError 函数只在开发环境下工作。当 render 函数遭遇错误时，提供另外一种渲染输出。
+        // 其错误将会作为第二个参数传递到 renderError。这个功能配合 hot-reload 非常实用。
         /* istanbul ignore else */
         if ( vm.$options.renderError) {
           try {
@@ -3647,6 +3706,7 @@
         vnode = vnode[0];
       }
       // return empty vnode in case the render function errored out
+      // render 函数报错的情况下，返回空 vnode
       if (!(vnode instanceof VNode)) {
         if ( Array.isArray(vnode)) {
           warn(
@@ -3967,10 +4027,10 @@
       if (cbs) {
         cbs = cbs.length > 1 ? toArray(cbs) : cbs;
         // 将类数组的对象转化为真数组，执行当前实例上事件的所有回调函数
-        var args = toArray(arguments, 1); 
+        var args = toArray(arguments, 1);
         var info = "event handler for \"" + event + "\"";
         for (var i = 0, l = cbs.length; i < l; i++) {
-          invokeWithErrorHandling(cbs[i], vm, args, vm, info); 
+          invokeWithErrorHandling(cbs[i], vm, args, vm, info);
         }
       }
       return vm
@@ -4057,26 +4117,32 @@
       // updated in a parent's updated hook.
     };
 
+    // 迫使 Vue 实例重新渲染。注意它仅仅影响实例本身和插入插槽内容的子组件，而不是所有子组件。
     Vue.prototype.$forceUpdate = function () {
       var vm = this;
       if (vm._watcher) {
-        vm._watcher.update();
+        vm._watcher.update(); // 调用 core/instance/observer/watcher.js 中的 update() 方法
       }
     };
 
+    // 完全销毁一个实例。清理它与其它实例的连接，解绑它的全部指令及事件监听器。
+    // 触发 beforeDestroy 和 destroyed 的钩子。
     Vue.prototype.$destroy = function () {
       var vm = this;
+      // 如果正在被销毁，就不再继续执行销毁操作，直接返回
       if (vm._isBeingDestroyed) {
         return
       }
+      // 调用 beforeDestroy 生命周期钩子后打开正在被销毁标志
       callHook(vm, 'beforeDestroy');
       vm._isBeingDestroyed = true;
-      // remove self from parent
+      // 父实例存在、且没有正在被销毁、也不是抽象组件就移除自身组件实例
       var parent = vm.$parent;
       if (parent && !parent._isBeingDestroyed && !vm.$options.abstract) {
         remove(parent.$children, vm);
       }
-      // teardown watchers
+
+      // 从所有订阅者列表中删除自身，意味着不会再被观察
       if (vm._watcher) {
         vm._watcher.teardown();
       }
@@ -4089,19 +4155,19 @@
       if (vm._data.__ob__) {
         vm._data.__ob__.vmCount--;
       }
-      // call the last hook...
+
+      // __patch__ 方法传入旧节点和新节点 null 用于销毁节点，之后调用 destroy 钩子
       vm._isDestroyed = true;
-      // invoke destroy hooks on current rendered tree
       vm.__patch__(vm._vnode, null);
-      // fire destroyed hook
       callHook(vm, 'destroyed');
-      // turn off all instance listeners.
+
+      // vm.$off 移除自定义事件监听器。如果没有提供参数，则移除实例上所有的事件监听器
       vm.$off();
-      // remove __vue__ reference
+      // 移除 __vue__ 引用
       if (vm.$el) {
         vm.$el.__vue__ = null;
       }
-      // release circular reference (#6759)
+      // 释放循环引用
       if (vm.$vnode) {
         vm.$vnode.parent = null;
       }
@@ -4632,6 +4698,7 @@
    * Subscriber interface.
    * Will be called when a dependency changes.
    */
+  // 订阅者接口，当依赖改变时将会被调用
   Watcher.prototype.update = function update () {
     /* istanbul ignore else */
     if (this.lazy) {
@@ -4647,6 +4714,7 @@
    * Scheduler job interface.
    * Will be called by the scheduler.
    */
+  // 调度器工作接口，将会被调度器调用
   Watcher.prototype.run = function run () {
     if (this.active) {
       var value = this.get();
@@ -4699,8 +4767,9 @@
       // remove self from vm's watcher list
       // this is a somewhat expensive operation so we skip it
       // if the vm is being destroyed.
+      // 如果组件不是正在被销毁
       if (!this.vm._isBeingDestroyed) {
-        remove(this.vm._watchers, this);
+        remove(this.vm._watchers, this); // 从数组中删除一个项目。
       }
       var i = this.deps.length;
       while (i--) {
@@ -5031,9 +5100,10 @@
     Vue.prototype.$set = set;
     Vue.prototype.$delete = del;
 
+    // vm.$watch( expOrFn, callback, [options] ) 返回一个取消观察函数 unwatchFn() 方法，用来停止触发回调
     Vue.prototype.$watch = function (
-      expOrFn, // key
-      cb, // 回调方法
+      expOrFn, // 观察 Vue 实例上的一个表达式或者一个函数计算结果的变化，表达式只接受简单的键路径。对于更复杂的表达式，用一个函数取代
+      cb, // 回调函数的参数为新值和旧值
       options // immediate / deep
     ) {
       var vm = this;
@@ -5041,16 +5111,19 @@
       if (isPlainObject(cb)) { 
         return createWatcher(vm, expOrFn, cb, options)
       }
+      // 监听对象内部值的变化，可以在选项参数中指定 deep: true 注意，监听数组的变化不需要这么做
+      // 在选项参数中指定 immediate: true 将立即以表达式的当前值触发回调
       options = options || {};
       options.user = true;
       var watcher = new Watcher(vm, expOrFn, cb, options);
-      // 开启 immediate 
+      // 开启 immediate，立即执行回调函数，invokeWithErrorHandling 对调用方法错误时进行处理
       if (options.immediate) {
         var info = "callback for immediate watcher \"" + (watcher.expression) + "\"";
         pushTarget();
         invokeWithErrorHandling(cb, vm, [watcher.value], vm, info);
         popTarget();
       }
+      // watcher.teardown() 原理是将 watcher 从所有监听列表中移除，并移除它的订阅者列表
       return function unwatchFn () {
         watcher.teardown();
       }

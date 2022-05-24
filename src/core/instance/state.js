@@ -348,9 +348,10 @@ export function stateMixin (Vue: Class<Component>) {
   Vue.prototype.$set = set
   Vue.prototype.$delete = del
 
+  // vm.$watch( expOrFn, callback, [options] ) 返回一个取消观察函数 unwatchFn() 方法，用来停止触发回调
   Vue.prototype.$watch = function (
-    expOrFn: string | Function, // key
-    cb: any, // 回调方法
+    expOrFn: string | Function, // 观察 Vue 实例上的一个表达式或者一个函数计算结果的变化，表达式只接受简单的键路径。对于更复杂的表达式，用一个函数取代
+    cb: any, // 回调函数的参数为新值和旧值
     options?: Object // immediate / deep
   ): Function {
     const vm: Component = this
@@ -358,16 +359,19 @@ export function stateMixin (Vue: Class<Component>) {
     if (isPlainObject(cb)) { 
       return createWatcher(vm, expOrFn, cb, options)
     }
+    // 监听对象内部值的变化，可以在选项参数中指定 deep: true 注意，监听数组的变化不需要这么做
+    // 在选项参数中指定 immediate: true 将立即以表达式的当前值触发回调
     options = options || {}
     options.user = true
     const watcher = new Watcher(vm, expOrFn, cb, options)
-    // 开启 immediate 
+    // 开启 immediate，立即执行回调函数，invokeWithErrorHandling 对调用方法错误时进行处理
     if (options.immediate) {
       const info = `callback for immediate watcher "${watcher.expression}"`
       pushTarget()
       invokeWithErrorHandling(cb, vm, [watcher.value], vm, info)
       popTarget()
     }
+    // watcher.teardown() 原理是将 watcher 从所有监听列表中移除，并移除它的订阅者列表
     return function unwatchFn () {
       watcher.teardown()
     }
