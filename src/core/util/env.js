@@ -43,6 +43,7 @@ export const isServerRendering = () => {
   if (_isServer === undefined) {
     /* istanbul ignore if */
     // 不是浏览器不是服务器
+    // global 是 node.js 中的全局对象
     if (!inBrowser && !inWeex && typeof global !== 'undefined') {
       // detect presence of vue-server-renderer and avoid
       // Webpack shimming the process

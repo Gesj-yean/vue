@@ -34,6 +34,10 @@ export function toggleObserving (value: boolean) {
  * Observer 类和每个响应式对象关联。
  * observer 会转化对象的属性值的 getter/setters 方法收集依赖和派发更新。
  */
+/**
+ * Observer 类和每一个被观察的对象相关。一旦相关， observer 将会转化目标对象
+ * 的属性值到 getter/setter 中，目的是为了收集和派发更新。
+ */
 export class Observer {
   value: any;
   dep: Dep;
@@ -41,10 +45,9 @@ export class Observer {
 
   constructor(value: any) {
     this.value = value
-    this.dep = new Dep() // 存放 Observer 的 watcher 列表
+    this.dep = new Dep() // 初始化一个 dep, dep 的作用是保存和触发 key 的 watcher 更新
     this.vmCount = 0
-    def(value, '__ob__', this) // __ob__ 指向自身 observe 实例，存在 __ob__ 属性意味着已经被观察过
-    // 如果是数组
+    def(value, '__ob__', this) // 给对象定义一个 __ob__ 属性，指向 observer 实例
     if (Array.isArray(value)) {
       // hasProto = '__proto__' in {} 判断对象是否存在 __proto__ 属性
       if (hasProto) {
@@ -62,7 +65,11 @@ export class Observer {
     }
   }
 
-  // 遍历所有的属性，修改 getter/setters，这个方法只有在 value 是object时调用
+  /**
+   * 对象调用
+   * 遍历所有属性并修改 getter/setter。 
+   * 仅当值类型为 Object 时才应调用此方法。
+   */
   walk (obj: Object) {
     const keys = Object.keys(obj)
     for (let i = 0; i < keys.length; i++) {
@@ -70,7 +77,10 @@ export class Observer {
     }
   }
 
-  // 数组项遍历，给数组的每一项创建一个 observe 实例
+  /**
+   * 数组调用
+   * 数组项遍历，给数组的每一项创建一个 observe 实例
+   */
   observeArray (items: Array<any>) {
     for (let i = 0, l = items.length; i < l; i++) {
       observe(items[i])
@@ -108,26 +118,31 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
 }
 
 /**
- * Attempt to create an observer instance for a value,
- * returns the new observer if successfully observed,
- * or the existing observer if the value already has one.
+ * 尝试给这个值去创建一个 observer 实例，如果创建成功，返回新的 observer 
+ * 或者如果值已经有了，返回一个现有的 observer
+ * @param {*} value 
+ * @param {boolean} asRootData 
+ * @returns Observer | void
  */
 export function observe (value: any, asRootData: ?boolean): Observer | void {
   if (!isObject(value) || value instanceof VNode) {
     return
   }
   let ob: Observer | void
+  // 如果 value 已经有 observer，就返回现有的 observer
+  // 否则如果不是服务器渲染，value是数组或者对象，value 是可扩展的，value 不是 vue 实例，就创建一个新的 observer
   if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
     ob = value.__ob__
   } else if (
     shouldObserve &&
     !isServerRendering() &&
     (Array.isArray(value) || isPlainObject(value)) &&
-    Object.isExtensible(value) &&
+    Object.isExtensible(value) && // Object.isExtensible() 方法判断一个对象是否是可扩展的（是否可以在它上面添加新的属性）。
     !value._isVue
   ) {
     ob = new Observer(value)
   }
+  // 如果是根组件，vmCount 不为0
   if (asRootData && ob) {
     ob.vmCount++
   }
@@ -135,7 +150,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
 }
 
 /**
- * Define a reactive property on an Object. 在一个对象上定义一个响应式属性。
+ * 在对象上定义一个响应式的属性。
  */
 export function defineReactive (
   obj: Object,

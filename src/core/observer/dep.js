@@ -7,7 +7,8 @@ import config from '../config'
 let uid = 0
 
 /**
- * dep 下的 subs 存放 Watcher 列表，可以调用 dep.notify() 触发 Watcher 列表更新。
+ * 一个 dep 对应一个 object.key，每次 key 更新时调用 dep.notify()，
+ * dep 下的 subs 存放 Watcher 列表，可以调用 dep.notify() 触发 watcher.update() 使 Watcher 列表更新。
  */
 export default class Dep {
   static target: ?Watcher; // 目标是 Watcher
@@ -16,7 +17,7 @@ export default class Dep {
 
   constructor() {
     this.id = uid++
-    this.subs = []
+    this.subs = [] // watcher 订阅者列表
   }
 
   // 向订阅者列表中添加一个订阅者 Watcher
