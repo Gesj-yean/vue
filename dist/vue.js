@@ -578,6 +578,7 @@
     if (_isServer === undefined) {
       /* istanbul ignore if */
       // 不是浏览器不是服务器
+      // global 是 node.js 中的全局对象
       if (!inBrowser && !inWeex && typeof global !== 'undefined') {
         // detect presence of vue-server-renderer and avoid
         // Webpack shimming the process
@@ -725,11 +726,12 @@
   var uid = 0;
 
   /**
-   * dep 下的 subs 存放 Watcher 列表，可以调用 dep.notify() 触发 Watcher 列表更新。
+   * 一个 dep 对应一个 object.key，每次 key 更新时调用 dep.notify()，
+   * dep 下的 subs 存放 Watcher 列表，可以调用 dep.notify() 触发 watcher.update() 使 Watcher 列表更新。
    */
   var Dep = function Dep() {
     this.id = uid++;
-    this.subs = [];
+    this.subs = []; // watcher 订阅者列表
   };
 
   // 向订阅者列表中添加一个订阅者 Watcher
@@ -937,12 +939,15 @@
    * Observer 类和每个响应式对象关联。
    * observer 会转化对象的属性值的 getter/setters 方法收集依赖和派发更新。
    */
+  /**
+   * Observer 类和每一个被观察的对象相关。一旦相关， observer 将会转化目标对象
+   * 的属性值到 getter/setter 中，目的是为了收集和派发更新。
+   */
   var Observer = function Observer(value) {
     this.value = value;
-    this.dep = new Dep(); // 存放 Observer 的 watcher 列表
+    this.dep = new Dep(); // 初始化一个 dep, dep 的作用是保存和触发 key 的 watcher 更新
     this.vmCount = 0;
-    def(value, '__ob__', this); // __ob__ 指向自身 observe 实例，存在 __ob__ 属性意味着已经被观察过
-    // 如果是数组
+    def(value, '__ob__', this); // 给对象定义一个 __ob__ 属性，指向 observer 实例
     if (Array.isArray(value)) {
       // hasProto = '__proto__' in {} 判断对象是否存在 __proto__ 属性
       if (hasProto) {
@@ -960,7 +965,11 @@
     }
   };
 
-  // 遍历所有的属性，修改 getter/setters，这个方法只有在 value 是object时调用
+  /**
+   * 对象调用
+   * 遍历所有属性并修改 getter/setter。 
+   * 仅当值类型为 Object 时才应调用此方法。
+   */
   Observer.prototype.walk = function walk (obj) {
     var keys = Object.keys(obj);
     for (var i = 0; i < keys.length; i++) {
@@ -968,7 +977,10 @@
     }
   };
 
-  // 数组项遍历，给数组的每一项创建一个 observe 实例
+  /**
+   * 数组调用
+   * 数组项遍历，给数组的每一项创建一个 observe 实例
+   */
   Observer.prototype.observeArray = function observeArray (items) {
     for (var i = 0, l = items.length; i < l; i++) {
       observe(items[i]);
@@ -1005,26 +1017,31 @@
   }
 
   /**
-   * Attempt to create an observer instance for a value,
-   * returns the new observer if successfully observed,
-   * or the existing observer if the value already has one.
+   * 尝试给这个值去创建一个 observer 实例，如果创建成功，返回新的 observer 
+   * 或者如果值已经有了，返回一个现有的 observer
+   * @param {*} value 
+   * @param {boolean} asRootData 
+   * @returns Observer | void
    */
   function observe (value, asRootData) {
     if (!isObject(value) || value instanceof VNode) {
       return
     }
     var ob;
+    // 如果 value 已经有 observer，就返回现有的 observer
+    // 否则如果不是服务器渲染，value是数组或者对象，value 是可扩展的，value 不是 vue 实例，就创建一个新的 observer
     if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
       ob = value.__ob__;
     } else if (
       shouldObserve &&
       !isServerRendering() &&
       (Array.isArray(value) || isPlainObject(value)) &&
-      Object.isExtensible(value) &&
+      Object.isExtensible(value) && // Object.isExtensible() 方法判断一个对象是否是可扩展的（是否可以在它上面添加新的属性）。
       !value._isVue
     ) {
       ob = new Observer(value);
     }
+    // 如果是根组件，vmCount 不为0
     if (asRootData && ob) {
       ob.vmCount++;
     }
@@ -1032,7 +1049,7 @@
   }
 
   /**
-   * Define a reactive property on an Object. 在一个对象上定义一个响应式属性。
+   * 在对象上定义一个响应式的属性。
    */
   function defineReactive (
     obj,
