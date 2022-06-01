@@ -768,15 +768,17 @@
   // The current target watcher being evaluated.
   // This is globally unique because only one watcher
   // can be evaluated at a time.
-  // 当前目标 watcher 被评估。这是全球唯一的，因为一次只能评估一个 watcher。
+  // 当前目标 watcher 被评估。这是全局唯一的，因为一次只能评估一个 watcher。
   Dep.target = null;
   var targetStack = [];
 
+  // 当前 watcher 入栈，将 Dep.target 指向当前的 watcher
   function pushTarget (target) {
     targetStack.push(target);
     Dep.target = target;
   }
 
+  // 出栈，Dep.target 指向上一个 watcher，把 Dep.target 恢复成上一个状态
   function popTarget () {
     targetStack.pop();
     Dep.target = targetStack[targetStack.length - 1];
@@ -2235,17 +2237,25 @@
    * getters, so that every nested property inside the object
    * is collected as a "deep" dependency.
    */
+  /**
+   * 递归遍历（Recursively traverse）对象以调用所有已转换的getter，
+   * 以便对象内的每个嵌套属性都作为“深层”依赖项收集。
+   *
+   * @param {any} val
+   */
   function traverse (val) {
     _traverse(val, seenObjects);
-    seenObjects.clear();
+    seenObjects.clear(); // 清空对象为 null
   }
 
   function _traverse (val, seen) {
     var i, keys;
     var isA = Array.isArray(val);
+    // 如果 val 是已被冻结的对象、VNode 实例、既不是数组也不是对象，就不会被收集
     if ((!isA && !isObject(val)) || Object.isFrozen(val) || val instanceof VNode) {
       return
     }
+    // 如果 val 已经被观察过
     if (val.__ob__) {
       var depId = val.__ob__.dep.id;
       if (seen.has(depId)) {
@@ -2253,6 +2263,7 @@
       }
       seen.add(depId);
     }
+    // 如果是数组或是对象，遍历每个属性
     if (isA) {
       i = val.length;
       while (i--) { _traverse(val[i], seen); }
@@ -4597,7 +4608,7 @@
   /**
    * Watcher 解析一个表达式，收集依赖，当表达式发生改变时触发调度。Watcher 类用于 $watch() api 和指令。
    */
-  var Watcher = function Watcher(
+  var Watcher = function Watcher( // 类实例化时传入的参数会用作构造函数的参数
     vm,
     expOrFn,
     cb,
@@ -4644,11 +4655,12 @@
         );
       }
     }
-    this.value = this.lazy
+    this.value = this.lazy // lazy 的作用？？
       ? undefined
       : this.get();
   };
-
+  // 一些原型方法
+  // 以下是定义在 watcher 类原型对象上的方法，用 Watcher.prototype.get() 访问
   /**
    * Evaluate the getter, and re-collect dependencies.
    */
@@ -4657,6 +4669,8 @@
     var value;
     var vm = this.vm;
     try {
+      // 让 vm 调用 this.getter，并传入 vm 作为参数
+      // this.getter = expOrFn
       value = this.getter.call(vm, vm);
     } catch (e) {
       if (this.user) {
@@ -4665,11 +4679,11 @@
         throw e
       }
     } finally {
-      // "touch" every property so they are all tracked as
-      // dependencies for deep watching
+      // 如果需要监听对象内部值的变化，那么调用 traverse 方法
       if (this.deep) {
-        traverse(value);
+        traverse(value); // 递归遍历 value 的每个属性， 确保每个属性都被监听
       }
+      // 当前 vm 的数据依赖收集已经完成
       popTarget();
       this.cleanupDeps();
     }

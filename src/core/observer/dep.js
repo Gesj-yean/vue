@@ -11,7 +11,7 @@ let uid = 0
  * dep 下的 subs 存放 Watcher 列表，可以调用 dep.notify() 触发 watcher.update() 使 Watcher 列表更新。
  */
 export default class Dep {
-  static target: ?Watcher; // 目标是 Watcher
+  static target: ?Watcher; // Dep 类的静态属性，可以使用 Dep.target 访问，内容是 Watcher
   id: number;
   subs: Array<Watcher>; // Watcher 组成的订阅列表
 
@@ -55,15 +55,17 @@ export default class Dep {
 // The current target watcher being evaluated.
 // This is globally unique because only one watcher
 // can be evaluated at a time.
-// 当前目标 watcher 被评估。这是全球唯一的，因为一次只能评估一个 watcher。
+// 当前目标 watcher 被评估。这是全局唯一的，因为一次只能评估一个 watcher。
 Dep.target = null
 const targetStack = []
 
+// 当前 watcher 入栈，将 Dep.target 指向当前的 watcher
 export function pushTarget (target: ?Watcher) {
   targetStack.push(target)
   Dep.target = target
 }
 
+// 出栈，Dep.target 指向上一个 watcher，把 Dep.target 恢复成上一个状态
 export function popTarget () {
   targetStack.pop()
   Dep.target = targetStack[targetStack.length - 1]

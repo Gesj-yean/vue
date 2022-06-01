@@ -38,15 +38,15 @@ export default class Watcher {
   sync: boolean;
   dirty: boolean;
   active: boolean;
-  deps: Array<Dep>;
-  newDeps: Array<Dep>;
+  deps: Array<Dep>; // deps 表示上一次添加的 Dep 实例数组
+  newDeps: Array<Dep>; // newDeps 表示新添加的 Dep 实例数组
   depIds: SimpleSet;
   newDepIds: SimpleSet;
   before: ?Function;
   getter: Function;
   value: any;
 
-  constructor(
+  constructor( // 类实例化时传入的参数会用作构造函数的参数
     vm: Component,
     expOrFn: string | Function,
     cb: Function,
@@ -94,11 +94,12 @@ export default class Watcher {
         )
       }
     }
-    this.value = this.lazy
+    this.value = this.lazy // lazy 的作用？？
       ? undefined
       : this.get()
   }
-
+  // 一些原型方法
+  // 以下是定义在 watcher 类原型对象上的方法，用 Watcher.prototype.get() 访问
   /**
    * Evaluate the getter, and re-collect dependencies.
    */
@@ -107,6 +108,8 @@ export default class Watcher {
     let value
     const vm = this.vm
     try {
+      // 让 vm 调用 this.getter，并传入 vm 作为参数
+      // this.getter = expOrFn
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -115,11 +118,11 @@ export default class Watcher {
         throw e
       }
     } finally {
-      // "touch" every property so they are all tracked as
-      // dependencies for deep watching
+      // 如果需要监听对象内部值的变化，那么调用 traverse 方法
       if (this.deep) {
-        traverse(value)
+        traverse(value) // 递归遍历 value 的每个属性， 确保每个属性都被监听
       }
+      // 当前 vm 的数据依赖收集已经完成
       popTarget()
       this.cleanupDeps()
     }
