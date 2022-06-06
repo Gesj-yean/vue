@@ -30,10 +30,10 @@ export default class Dep {
     remove(this.subs, sub)
   }
 
-  // todo 
+  // watcher 中会调用该方法 
   depend () {
     if (Dep.target) {
-      Dep.target.addDep(this)
+      Dep.target.addDep(this) // watcher 中添加这个 dep
     }
   }
 

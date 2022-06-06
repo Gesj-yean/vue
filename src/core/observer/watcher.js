@@ -131,29 +131,34 @@ export default class Watcher {
 
   /**
    * Add a dependency to this directive.
+   * 添加一个依赖：如果dep数组中没有dep.id，那么触发 dep 订阅当前 watcher
    */
   addDep (dep: Dep) {
     const id = dep.id
+    // dep.id 是用来判重的
     if (!this.newDepIds.has(id)) {
       this.newDepIds.add(id)
       this.newDeps.push(dep)
       if (!this.depIds.has(id)) {
-        dep.addSub(this)
+        dep.addSub(this) // 向 dep 的订阅者列表中添加这个 watcher
       }
     }
   }
 
   /**
    * Clean up for dependency collection.
+   * 清除依赖收集
    */
   cleanupDeps () {
+    // 先保持 deps 和 newDepIds数量相同
     let i = this.deps.length
     while (i--) {
       const dep = this.deps[i]
       if (!this.newDepIds.has(dep.id)) {
-        dep.removeSub(this)
+        dep.removeSub(this) // 如果当前 dep 中没有 newDepIds，就移除它的订阅者列表
       }
     }
+    // 更新 depIds、deps 为当前的 deps，然后清除 newDepIds 和 newDeps
     let tmp = this.depIds
     this.depIds = this.newDepIds
     this.newDepIds = tmp

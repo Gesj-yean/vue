@@ -744,10 +744,10 @@
     remove(this.subs, sub);
   };
 
-  // todo 
+  // watcher 中会调用该方法 
   Dep.prototype.depend = function depend () {
     if (Dep.target) {
-      Dep.target.addDep(this);
+      Dep.target.addDep(this); // watcher 中添加这个 dep
     }
   };
 
@@ -969,7 +969,8 @@
 
   /**
    * 对象调用
-   * 遍历所有属性并修改 getter/setter。 
+   * 遍历所有属性并修改 getter/setter。
+   * 每个属性值都会有一个 dep 类和 watcher 列表
    * 仅当值类型为 Object 时才应调用此方法。
    */
   Observer.prototype.walk = function walk (obj) {
@@ -1060,7 +1061,7 @@
     customSetter,
     shallow
   ) {
-    var dep = new Dep();
+    var dep = new Dep(); // dep.id / dep.subs
 
     var property = Object.getOwnPropertyDescriptor(obj, key);
     if (property && property.configurable === false) {
@@ -1092,8 +1093,10 @@
         return value
       },
       set: function reactiveSetter (newVal) {
+        // 旧的 obj[key]
         var value = getter ? getter.call(obj) : val;
         /* eslint-disable no-self-compare */
+        // 如果新老值一样，则直接 return，不跟新更不触发响应式更新过程
         if (newVal === value || (newVal !== newVal && value !== value)) {
           return
         }
@@ -1102,13 +1105,17 @@
           customSetter();
         }
         // #7981: for accessor properties without setter
+        // setter 不存在说明该属性是一个只读属性，直接 return
         if (getter && !setter) { return }
+        // 设置新值
         if (setter) {
           setter.call(obj, newVal);
         } else {
           val = newVal;
         }
+        // 对新值进行观察，让新值也是响应式的
         childOb = !shallow && observe(newVal);
+        // 依赖通知更新
         dep.notify();
       }
     });
@@ -4692,29 +4699,34 @@
 
   /**
    * Add a dependency to this directive.
+   * 添加一个依赖：如果dep数组中没有dep.id，那么触发 dep 订阅当前 watcher
    */
   Watcher.prototype.addDep = function addDep (dep) {
     var id = dep.id;
+    // dep.id 是用来判重的
     if (!this.newDepIds.has(id)) {
       this.newDepIds.add(id);
       this.newDeps.push(dep);
       if (!this.depIds.has(id)) {
-        dep.addSub(this);
+        dep.addSub(this); // 向 dep 的订阅者列表中添加这个 watcher
       }
     }
   };
 
   /**
    * Clean up for dependency collection.
+   * 清除依赖收集
    */
   Watcher.prototype.cleanupDeps = function cleanupDeps () {
+    // 先保持 deps 和 newDepIds数量相同
     var i = this.deps.length;
     while (i--) {
       var dep = this.deps[i];
       if (!this.newDepIds.has(dep.id)) {
-        dep.removeSub(this);
+        dep.removeSub(this); // 如果当前 dep 中没有 newDepIds，就移除它的订阅者列表
       }
     }
+    // 更新 depIds、deps 为当前的 deps，然后清除 newDepIds 和 newDeps
     var tmp = this.depIds;
     this.depIds = this.newDepIds;
     this.newDepIds = tmp;

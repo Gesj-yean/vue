@@ -67,7 +67,8 @@ export class Observer {
 
   /**
    * 对象调用
-   * 遍历所有属性并修改 getter/setter。 
+   * 遍历所有属性并修改 getter/setter。
+   * 每个属性值都会有一个 dep 类和 watcher 列表
    * 仅当值类型为 Object 时才应调用此方法。
    */
   walk (obj: Object) {
@@ -159,7 +160,7 @@ export function defineReactive (
   customSetter?: ?Function,
   shallow?: boolean
 ) {
-  const dep = new Dep()
+  const dep = new Dep() // dep.id / dep.subs
 
   const property = Object.getOwnPropertyDescriptor(obj, key)
   if (property && property.configurable === false) {
@@ -191,8 +192,10 @@ export function defineReactive (
       return value
     },
     set: function reactiveSetter (newVal) {
+      // 旧的 obj[key]
       const value = getter ? getter.call(obj) : val
       /* eslint-disable no-self-compare */
+      // 如果新老值一样，则直接 return，不跟新更不触发响应式更新过程
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
@@ -201,13 +204,17 @@ export function defineReactive (
         customSetter()
       }
       // #7981: for accessor properties without setter
+      // setter 不存在说明该属性是一个只读属性，直接 return
       if (getter && !setter) return
+      // 设置新值
       if (setter) {
         setter.call(obj, newVal)
       } else {
         val = newVal
       }
+      // 对新值进行观察，让新值也是响应式的
       childOb = !shallow && observe(newVal)
+      // 依赖通知更新
       dep.notify()
     }
   })
